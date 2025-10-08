@@ -1,24 +1,25 @@
 import numpy as np
-from llm_advisor import get_sentiment
 import pandas as pd
 
 class TradingEnvironment:
-    def __init__(self, price, window_size=10):
+    def __init__(self, price, window_size=10, sentiment_score=None):
         self.price = np.array(price)
+        self.sentiment_score = sentiment_score
         self.window_size = window_size
         self.reset()
 
     def reset(self):
         self.current_steps = self.window_size
-        self.balance = 1000000.0
+        self.balance = 1000.0
         self.holdings = 0.0
         return self._get_state()
     
     def _get_state(self):
         price_history = self.price[self.current_steps - self.window_size:self.current_steps]
         price_history = price_history / max(price_history)
+        sentiment = np.array([self.sentiment_score[self.current_steps - 1]]) if self.sentiment_score is not None else np.array([0.0])
 
-        state = np.concatenate([price_history])
+        state = np.concatenate([price_history, sentiment])
         return state
     
     def step(self, action: int):
@@ -44,7 +45,7 @@ class TradingEnvironment:
             self.holdings -= 1
 
         portfolio_value = self.balance + self.holdings * price
-        reward = portfolio_value - 1000000.0
+        reward = portfolio_value - 1000.0
         
         self.current_steps += 1
         if self.current_steps >= len(self.price):
@@ -53,9 +54,6 @@ class TradingEnvironment:
         next_state = self._get_state()
 
         return next_state, reward, done, portfolio_value
-    
-
-
 
     """
     before that I want the following: 1. Ways to improve 2. the other advanced RL methods
